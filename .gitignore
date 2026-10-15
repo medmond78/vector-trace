@@ -1,0 +1,9 @@
+AGENTS.md
+.vector_trace/
+tests/*.pdf
+tests/*.png
+tests/out/
+.claude/
+.remember/
+.pytest_cache/
+__pycache__/
