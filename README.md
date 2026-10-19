@@ -27,6 +27,11 @@ python -m vector_trace extract fig.png \
     -o curve.csv
 ```
 
+- `--xcal PIXEL:VALUE PIXEL:VALUE` calibrates the x axis: two pixel *columns* in the image, each paired with the data value it represents. Above, pixel column 193 is x = 0, and pixel column 1052 is x = 12 — so the tool now knows how image columns map to x values.
+- `--ycal PIXEL:VALUE PIXEL:VALUE` does the same for the y axis, using pixel *rows* (counted down from the top of the image) instead of columns. Above, row 653.5 is y = 0, and row 88.5 is y = 140.
+
+In both cases "PIXEL" is a pixel index you read off the image — see **Workflow** below for how to find good ones (usually two grid lines or tick marks, as far apart as possible, on each axis).
+
 This writes `curve.csv` and `curve.overlay.png`. Open the overlay and confirm the red line sits on your curve before using the numbers.
 
 ## Workflow
