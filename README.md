@@ -97,6 +97,8 @@ python -m vector_trace preview fig.png --seed 908,335
 
 Opens a window with the same green-frame/red-curve overlay `extract` produces; close it (any key) to exit. Needs a GUI-capable OpenCV build — `pip install opencv-python` (not `opencv-python-headless`); otherwise it fails with a clear error.
 
+Moving the mouse over the window shows the pixel coordinates under the cursor (`column,row`, the same format `--seed` takes) in a box in the top-left corner — handy for reading off a `--seed` value to use with `extract`.
+
 The original image is faded behind the overlay (default 40% opacity) so the traced curve stands out. Pass a different opacity (0-100) right after the image:
 
 ```

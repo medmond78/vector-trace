@@ -41,9 +41,11 @@ COMMANDS
         Trace one curve and show it, overlaid on a faded version of the
         image, in a window. OPACITY (0-100, default 40) controls how strong
         the original image is behind the overlay, to make the traced curve
-        easier to see. Writes nothing to disk; close the window (any key) to
-        exit. Needs a GUI-capable OpenCV build (plain "opencv-python", not
-        "opencv-python-headless").
+        easier to see. Moving the mouse over the window shows the pixel
+        coordinates under the cursor (column,row, the same format --seed
+        takes) in a box in the top-left corner. Writes nothing to disk;
+        close the window (any key) to exit. Needs a GUI-capable OpenCV
+        build (plain "opencv-python", not "opencv-python-headless").
 
 CALIBRATION
     Each axis needs two reference points, written PIXEL:VALUE.

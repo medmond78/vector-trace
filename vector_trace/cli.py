@@ -92,8 +92,19 @@ def preview(a):
     cols, rows = trace_pixels(a.image, a.seed and _pair(a.seed), color, frame, a.thr, a.tol)
     faded = (img.astype(np.float32) * (a.opacity / 100.0)).astype(np.uint8)
     _overlay(faded, frame, cols, rows)
+    win = f"vector-trace preview: {a.image}  (press any key to close)"
+
+    def _show_pixel(event, x, y, flags, userdata):
+        if event != cv2.EVENT_MOUSEMOVE:
+            return
+        shown = faded.copy()
+        cv2.rectangle(shown, (0, 0), (150, 24), (0, 0, 0), -1)
+        cv2.putText(shown, f"{x},{y}", (6, 17), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.imshow(win, shown)
+
     try:
-        cv2.imshow(f"vector-trace preview: {a.image}  (press any key to close)", faded)
+        cv2.imshow(win, faded)
+        cv2.setMouseCallback(win, _show_pixel)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     except cv2.error as err:
