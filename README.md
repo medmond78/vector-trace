@@ -4,7 +4,7 @@ Command-line tool that digitizes a curve from an image of a 2D plot. It uses Sob
 
 Output is a CSV of (x, y) points and an overlay image for checking the trace by eye.
 
-Status: M1 core pipeline, plus color-based curve selection (`--seed`/`--color`), a `colors` command, and a GUI `preview` command. Raster images only, one curve per run. See `PRD.md` for the design and roadmap, and `CLAUDE.md` for how the current implementation compares to it.
+Status: M1 core pipeline, plus color-based curve selection (`--seed`/`--color`), a `colors` command, a GUI `preview` command, and a guided click-then-type calibration mode (`guide`). Raster images only, one curve per run. See `PRD.md` for the design and roadmap, and `CLAUDE.md` for how the current implementation compares to it.
 
 ## Install
 
@@ -116,6 +116,18 @@ python -m vector_trace preview fig.png 100 --seed 908,335  # original at full st
 ```
 python -m vector_trace preview fig.png --color blue
 ```
+
+## Guided mode: `guide`
+
+The usual workflow is a round trip: read a pixel in `preview`, hand-type it into `extract --xcal`/`--ycal`/`--seed`, repeat. `guide` collapses that into one click-then-type session and runs the extraction for you:
+
+```
+python -m vector_trace guide fig.png
+```
+
+It opens a window (same GUI requirement as `preview`) and, with instructions shown on screen and in the terminal, walks through: whether each axis is linear or log, then 2 x-axis and 2 y-axis calibration points — click the point, type its value in the terminal — then the curve itself, either clicked directly or, by pressing `c`, typed as a color name/hex instead of `--color`. It then writes `curve.csv` and `curve.overlay.png` exactly like `extract` (`-o` to override the name), and prints the equivalent `extract ...` command so you still have a reproducible, tweakable record of the run. Esc at any point cancels — nothing is written.
+
+`guide` only covers the common case. For `--frame`/`--tol`/`--thr` tuning, multiple curves, or anything else `extract` can do, use `extract` directly — the printed command from a `guide` run is a ready starting point for that.
 
 ## If the plot area is wrong
 

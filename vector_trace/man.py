@@ -12,10 +12,12 @@ SYNOPSIS
     vector-trace colors IMAGE [--n N] [--frame X0,Y0,X1,Y1]
     vector-trace preview IMAGE [OPACITY] [--seed X,Y | --color NAME|HEX]
                  [--tol N] [--frame X0,Y0,X1,Y1] [--thr F]
+    vector-trace guide IMAGE [-o FILE]
     vector-trace --help | --man
     vector-trace extract --help | --man
     vector-trace colors --help | --man
     vector-trace preview --help | --man
+    vector-trace guide --help | --man
 
     The same commands run as "python -m vector_trace ...".
 
@@ -49,6 +51,20 @@ COMMANDS
         while reading a plot. Writes nothing to disk; close the window
         (any key) to exit. Needs a GUI-capable OpenCV build (plain
         "opencv-python", not "opencv-python-headless").
+
+    guide
+        Interactively click calibration points and the curve instead of
+        typing --xcal/--ycal/--seed/--color by hand: click a point, then
+        type its value in the terminal, for each of 2 x-axis and 2 y-axis
+        points (asking first whether each axis is linear or log), then
+        either click the curve or press "c" to type a color name/hex
+        instead. Runs the extraction immediately, writes CSV and overlay
+        PNG like extract, and prints the equivalent extract command so the
+        run stays reproducible. Esc at any point cancels (nothing
+        written). Covers only the common case: no --frame/--tol/--thr here
+        -- use extract directly (optionally starting from guide's printed
+        command) when those need tuning. Needs the same GUI-capable
+        OpenCV build as preview.
 
 CALIBRATION
     Each axis needs two reference points, written PIXEL:VALUE.
@@ -148,6 +164,9 @@ OUTPUT
 
     preview opens a window with the overlay and writes no file.
 
+    guide writes the same CSV and .overlay.png as extract, plus prints the
+    equivalent extract command to standard output.
+
 EXIT STATUS
     0   Success.
     1   Error, with a message on standard error: unreadable image, invalid
@@ -192,6 +211,10 @@ EXAMPLES
 
         vector-trace preview fig.png --color blue
 
+    Calibrating and extracting without typing any pixel coordinates:
+
+        vector-trace guide fig.png
+
 LIMITATIONS
     - One curve per run. Run once per curve with a different --seed.
     - The curve must be a function of x (one y per x). Vertical or looping
@@ -206,8 +229,11 @@ LIMITATIONS
     - Raster images only. PDFs must be exported to an image first.
     - Accuracy on clean images is about one pixel; the result depends on how
       precisely the calibration points are placed.
-    - preview needs a GUI-capable OpenCV build; it fails with a clear error
-      under "opencv-python-headless" or in a headless/SSH session.
+    - preview and guide need a GUI-capable OpenCV build; they fail with a
+      clear error under "opencv-python-headless" or in a headless/SSH
+      session.
+    - guide covers only the common case: linear or log axes, one curve,
+      auto-detected plot frame. For --frame/--tol/--thr, use extract.
 
 SEE ALSO
     PRD.md in the project directory for the design and roadmap.

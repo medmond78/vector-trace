@@ -4,6 +4,8 @@ Pixel coordinates are pixel indices (pixel centers at integers, origin top-left)
 Without a seed the curve is found from Sobel edges; with a seed it is found by the
 stroke color at the seed (needed to separate curves, markers and annotations).
 """
+import csv
+
 import cv2
 import numpy as np
 
@@ -157,3 +159,19 @@ def extract_curve(image_path, xcal, ycal, seed=None, color=None, xlog=False, ylo
     cols, rows = trace_pixels(image_path, seed, color, frame, thr, tol)
     pts = to_data(cols, rows, xcal, ycal, xlog, ylog)
     return pts[np.argsort(pts[:, 0])]
+
+
+def overlay(img, frame, cols, rows):
+    """Draw the plot frame (green) and traced curve (red) onto img in place. Returns img."""
+    x0, y0, x1, y1 = (int(v) for v in frame)
+    cv2.rectangle(img, (x0, y0), (x1, y1), (0, 160, 0), 1)
+    cv2.polylines(img, [np.round(np.column_stack([cols, rows])).astype(np.int32)], False, (0, 0, 255), 1)
+    return img
+
+
+def write_csv(path, pts):
+    """Write (N, 2) data points to a CSV with header series,x,y. All rows are series "curve1"."""
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["series", "x", "y"])
+        w.writerows(("curve1", f"{x:.10g}", f"{y:.10g}") for x, y in pts)

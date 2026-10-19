@@ -1,5 +1,4 @@
 import argparse
-import csv
 import pydoc
 import sys
 from pathlib import Path
@@ -8,8 +7,9 @@ import cv2
 import numpy as np
 
 from .colors import dominant_colors, match_stroke_color, nearest_color_name, nearest_emoji
-from .core import find_frame, plot_roi, sobel_magnitude, to_data, trace_pixels
+from .core import find_frame, overlay, plot_roi, sobel_magnitude, to_data, trace_pixels, write_csv
 from .man import MAN
+from .wizard import run_wizard
 
 for _stream in (sys.stdout, sys.stderr):  # the man text and `colors` output contain emoji; Windows consoles default to cp1252
     if hasattr(_stream, "reconfigure"):
@@ -45,13 +45,6 @@ def _frame(a, img):
     return frame
 
 
-def _overlay(img, frame, cols, rows):
-    x0, y0, x1, y1 = (int(v) for v in frame)
-    cv2.rectangle(img, (x0, y0), (x1, y1), (0, 160, 0), 1)
-    cv2.polylines(img, [np.round(np.column_stack([cols, rows])).astype(np.int32)], False, (0, 0, 255), 1)
-    return img
-
-
 def extract(a):
     xcal, ycal = _cal(a.xcal), _cal(a.ycal)
     img = cv2.imread(a.image)
@@ -63,12 +56,8 @@ def extract(a):
     pts = to_data(cols, rows, xcal, ycal, a.xlog, a.ylog)
 
     out = Path(a.output)
-    with open(out, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["series", "x", "y"])
-        w.writerows(("curve1", f"{x:.10g}", f"{y:.10g}") for x, y in pts)
-
-    cv2.imwrite(str(out.with_suffix(".overlay.png")), _overlay(img, frame, cols, rows))
+    write_csv(out, pts)
+    cv2.imwrite(str(out.with_suffix(".overlay.png")), overlay(img, frame, cols, rows))
     print(f"{len(pts)} points -> {out}")
 
 
@@ -91,7 +80,7 @@ def preview(a):
     color = match_stroke_color(img, plot_roi(img.shape[:2], frame), a.color) if a.color else None
     cols, rows = trace_pixels(a.image, a.seed and _pair(a.seed), color, frame, a.thr, a.tol)
     faded = (img.astype(np.float32) * (a.opacity / 100.0)).astype(np.uint8)
-    _overlay(faded, frame, cols, rows)
+    overlay(faded, frame, cols, rows)
     win = f"vector-trace preview: {a.image}  (press any key to close; click to log a pixel)"
     clicks = []
 
@@ -124,6 +113,10 @@ def preview(a):
             "run 'pip install opencv-python' to use preview"
         ) from err
     print(f"{len(cols)} points traced (preview only; nothing written)")
+
+
+def guide(a):
+    run_wizard(a.image, a.output)
 
 
 EXAMPLES = """\
@@ -201,9 +194,19 @@ def main(argv=None):
     v.add_argument("--tol", type=float, default=40, help="with --seed/--color: color tolerance (RGB distance, default 40)")
     v.add_argument("--frame", metavar="X0,Y0,X1,Y1", help="plot area in pixels (default: auto-detect)")
     v.add_argument("--thr", type=float, default=0.3, help="without --seed/--color: edge threshold, fraction of max gradient (default 0.3)")
+    g = sub.add_parser(
+        "guide",
+        formatter_class=fmt,
+        help="click-then-type guided calibration, no flags to hand-type",
+        description="Interactively click calibration points and the curve, then extract immediately "
+        "and print the equivalent extract command. For --frame/--tol/--thr tuning, use extract directly.",
+    )
+    g.add_argument("--man", action=_Man)
+    g.add_argument("image")
+    g.add_argument("-o", "--output", default="curve.csv", help="output CSV (default curve.csv)")
     a = p.parse_args(argv)
     try:
-        {"extract": extract, "colors": colors, "preview": preview}[a.cmd](a)
+        {"extract": extract, "colors": colors, "preview": preview, "guide": guide}[a.cmd](a)
     except ValueError as err:
         print(f"error: {err}", file=sys.stderr)
         return 1

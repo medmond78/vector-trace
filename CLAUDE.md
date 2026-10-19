@@ -22,6 +22,14 @@ past the PRD in places.
   feature (numbered-tick calibration image from a PDF page) — see below.
 - Log axes (`--xlog`/`--ylog`), `--frame` override, `--man` full manual
   (FR3-FR5).
+- `guide IMAGE [-o FILE]` (not in PRD): guided click-then-type calibration.
+  Confirmed via `/interview-me` (`docs/intent/guided-calibration.md`) as the
+  fix for the `preview`-to-`extract` manual round-trip. Opens a GUI window,
+  collects 2 x/2 y calibration points by click-then-type-in-terminal (plus
+  linear/log per axis) and a curve pick (click, or `c` to type a color),
+  then runs the extraction itself and prints the equivalent `extract`
+  command. Covers only the common case: no `--frame`/`--tol`/`--thr`
+  exposed, by design -- drop to `extract` for those.
 
 ## Not implemented (PRD scope)
 
@@ -42,7 +50,11 @@ past the PRD in places.
   stroke masking), plot-frame detection, calibration math.
 - `vector_trace/colors.py` — dominant-color k-means clustering, CSS3/X11 name
   table, color-square emoji matching, hex/name parsing for `--color`.
-- `vector_trace/cli.py` — argparse CLI for `extract`/`colors`/`preview`.
+- `vector_trace/cli.py` — argparse CLI for `extract`/`colors`/`preview`/`guide`.
+- `vector_trace/wizard.py` — the `guide` interactive flow (click-then-type
+  calibration, curve pick, reproducible-command formatting). Shares
+  `core.overlay`/`core.write_csv` with `extract`/`preview` rather than
+  duplicating them.
 - `vector_trace/man.py` — the `--man` manual text (kept in sync with
   `--help`; `tests/test_cli.py::test_man_documents_every_option` checks every
   `extract --help` flag appears in `--man`).
