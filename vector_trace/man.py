@@ -43,9 +43,12 @@ COMMANDS
         the original image is behind the overlay, to make the traced curve
         easier to see. Moving the mouse over the window shows the pixel
         coordinates under the cursor (column,row, the same format --seed
-        takes) in a box in the top-left corner. Writes nothing to disk;
-        close the window (any key) to exit. Needs a GUI-capable OpenCV
-        build (plain "opencv-python", not "opencv-python-headless").
+        takes) in a box in the top-left corner. Clicking logs that pixel
+        into a list of the most recent 4 clicks shown just below, numbered
+        1-4 oldest to newest -- for jotting down calibration-point pixels
+        while reading a plot. Writes nothing to disk; close the window
+        (any key) to exit. Needs a GUI-capable OpenCV build (plain
+        "opencv-python", not "opencv-python-headless").
 
 CALIBRATION
     Each axis needs two reference points, written PIXEL:VALUE.

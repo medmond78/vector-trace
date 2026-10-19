@@ -92,19 +92,30 @@ def preview(a):
     cols, rows = trace_pixels(a.image, a.seed and _pair(a.seed), color, frame, a.thr, a.tol)
     faded = (img.astype(np.float32) * (a.opacity / 100.0)).astype(np.uint8)
     _overlay(faded, frame, cols, rows)
-    win = f"vector-trace preview: {a.image}  (press any key to close)"
+    win = f"vector-trace preview: {a.image}  (press any key to close; click to log a pixel)"
+    clicks = []
 
-    def _show_pixel(event, x, y, flags, userdata):
-        if event != cv2.EVENT_MOUSEMOVE:
-            return
+    def _render(cursor):
         shown = faded.copy()
-        cv2.rectangle(shown, (0, 0), (150, 24), (0, 0, 0), -1)
-        cv2.putText(shown, f"{x},{y}", (6, 17), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.rectangle(shown, (0, 0), (170, 24), (0, 0, 0), -1)
+        cv2.putText(shown, f"{cursor[0]},{cursor[1]}", (6, 17), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+        if clicks:
+            cv2.rectangle(shown, (0, 24), (170, 24 + 20 * len(clicks) + 6), (0, 0, 0), -1)
+            for i, (cx, cy) in enumerate(clicks):
+                cv2.putText(shown, f"{i + 1}: {cx},{cy}", (6, 24 + 20 * i + 16), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1, cv2.LINE_AA)
         cv2.imshow(win, shown)
+
+    def _on_mouse(event, x, y, flags, userdata):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            clicks.append((x, y))
+            del clicks[:-4]  # keep only the most recent 4
+        elif event != cv2.EVENT_MOUSEMOVE:
+            return
+        _render((x, y))
 
     try:
         cv2.imshow(win, faded)
-        cv2.setMouseCallback(win, _show_pixel)
+        cv2.setMouseCallback(win, _on_mouse)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     except cv2.error as err:
