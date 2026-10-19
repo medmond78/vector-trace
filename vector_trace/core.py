@@ -77,26 +77,36 @@ def _color_mask(bgr, color, tol, tmin=0.4, tmax=1.15):
     return core | (edge & near_core)
 
 
-def trace_pixels(image_path, seed=None, frame=None, thr=0.3, tol=40):
+def plot_roi(shape, frame):
+    """Boolean mask of `shape` covering the plot area `frame`, kept AXIS_MARGIN px off the axis lines."""
+    x0, y0, x1, y1 = frame
+    roi = np.zeros(shape, bool)
+    roi[y0 + AXIS_MARGIN : y1 - AXIS_MARGIN + 1, x0 + AXIS_MARGIN : x1 - AXIS_MARGIN + 1] = True
+    return roi
+
+
+def trace_pixels(image_path, seed=None, color=None, frame=None, thr=0.3, tol=40):
     """Trace one curve. Returns (cols, rows) float arrays in pixel indices, one point per image column.
 
-    seed=None: the widest Sobel-edge component. seed=(x, y): the stroke of that color touching the seed.
+    seed=None, color=None: the widest Sobel-edge component.
+    seed=(x, y): the stroke of the color at that pixel, nearest to the seed.
+    color=(b, g, r): the widest stroke of that exact color (no pixel needed to disambiguate it).
     """
     bgr = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
     if bgr is None:
         raise ValueError(f"cannot read image: {image_path}")
     mag = sobel_magnitude(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
-    x0, y0, x1, y1 = frame if frame is not None else find_frame(mag)
-    roi = np.zeros(mag.shape, bool)
-    roi[y0 + AXIS_MARGIN : y1 - AXIS_MARGIN + 1, x0 + AXIS_MARGIN : x1 - AXIS_MARGIN + 1] = True
+    frame = frame if frame is not None else find_frame(mag)
+    roi = plot_roi(mag.shape, frame)
     if not roi.any() or not mag[roi].any():
         raise ValueError("plot area is empty; pass frame=x0,y0,x1,y1")
 
-    if seed is None:
+    if seed is None and color is None:
         binary = (mag > thr * mag[roi].max()) & roi
         closed = binary
     else:
-        binary = _color_mask(bgr, _seed_color(bgr, seed, roi), tol) & roi
+        target = np.asarray(color, dtype=np.float32) if color is not None else _seed_color(bgr, seed, roi)
+        binary = _color_mask(bgr, target, tol) & roi
         # bridge the few pixels a marker or crossing line hides from the stroke
         closed = cv2.morphologyEx(binary.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)) > 0
     n, labels, stats, _ = cv2.connectedComponentsWithStats(closed.astype(np.uint8), connectivity=8)
@@ -142,8 +152,8 @@ def to_data(cols, rows, xcal, ycal, xlog=False, ylog=False):
     return np.column_stack([fx(cols), fy(rows)])
 
 
-def extract_curve(image_path, xcal, ycal, seed=None, xlog=False, ylog=False, frame=None, thr=0.3, tol=40):
+def extract_curve(image_path, xcal, ycal, seed=None, color=None, xlog=False, ylog=False, frame=None, thr=0.3, tol=40):
     """xcal=[(px, value)]*2, ycal=[(py, value)]*2. Returns (N, 2) data points sorted by x."""
-    cols, rows = trace_pixels(image_path, seed, frame, thr, tol)
+    cols, rows = trace_pixels(image_path, seed, color, frame, thr, tol)
     pts = to_data(cols, rows, xcal, ycal, xlog, ylog)
     return pts[np.argsort(pts[:, 0])]

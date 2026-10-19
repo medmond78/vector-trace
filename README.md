@@ -4,7 +4,7 @@ Command-line tool that digitizes a curve from an image of a 2D plot. It uses Sob
 
 Output is a CSV of (x, y) points and an overlay image for checking the trace by eye.
 
-Status: early (M1 plus seed-color tracing). Raster images only, one curve per run. See `PRD.md` for the design and roadmap.
+Status: M1 core pipeline, plus color-based curve selection (`--seed`/`--color`), a `colors` command, and a GUI `preview` command. Raster images only, one curve per run. See `PRD.md` for the design and roadmap, and `CLAUDE.md` for how the current implementation compares to it.
 
 ## Install
 
@@ -55,6 +55,19 @@ The seed is `column,row`, within 10 pixels of the curve. The tool takes the stro
 
 If the trace breaks up along the curve, raise `--tol` (default 40). If it jumps onto a similar-colored neighbor, lower it.
 
+## Choosing a curve by color: `--color`
+
+Instead of a pixel, name the color directly, as a common name or a hex code:
+
+```
+python -m vector_trace extract fig.png --xcal 193:0 1052:12 --ycal 653.5:0 88.5:140 \
+    --color blue -o blue.csv
+python -m vector_trace extract fig.png --xcal 193:0 1052:12 --ycal 653.5:0 88.5:140 \
+    --color "#1f77b4" -o blue.csv
+```
+
+Internally this runs the same color-identification `colors` uses to find the plot's actual dominant colors and picks the one closest to what you asked for — but nothing gets printed, since the point here is tracing, not listing. Because there's no pixel to disambiguate, the *widest* stroke of that color is traced; if a plot has two curves in the same color, use `--seed` instead. Mutually exclusive with `--seed`.
+
 ## Log axes
 
 Add `--xlog` and/or `--ylog` and give the real (positive) values:
@@ -62,6 +75,39 @@ Add `--xlog` and/or `--ylog` and give the real (positive) values:
 ```
 python -m vector_trace extract fig.png --xcal 253.5:10 546.5:100 --xlog \
     --ycal 471.5:10 66.5:50 -o curve.csv
+```
+
+## Identifying colors: `colors`
+
+To see what colors are in a plot without extracting any curve data (e.g. to pick a `--seed`):
+
+```
+python -m vector_trace colors fig.png --n 3
+```
+
+Prints the most common non-background colors in the plot area, most common first: a color-square emoji, hex code, and nearest common color name.
+
+## Previewing a trace: `preview`
+
+To check a trace by eye before committing to calibration (or just to see which `--seed` to use), show it in a window instead of writing any files:
+
+```
+python -m vector_trace preview fig.png --seed 908,335
+```
+
+Opens a window with the same green-frame/red-curve overlay `extract` produces; close it (any key) to exit. Needs a GUI-capable OpenCV build — `pip install opencv-python` (not `opencv-python-headless`); otherwise it fails with a clear error.
+
+The original image is faded behind the overlay (default 40% opacity) so the traced curve stands out. Pass a different opacity (0-100) right after the image:
+
+```
+python -m vector_trace preview fig.png 15 --seed 908,335   # faded to 15%
+python -m vector_trace preview fig.png 100 --seed 908,335  # original at full strength
+```
+
+`preview` also accepts `--color` instead of `--seed`, same as `extract` (see above) — pick a curve by name or hex code without first finding a pixel on it:
+
+```
+python -m vector_trace preview fig.png --color blue
 ```
 
 ## If the plot area is wrong
